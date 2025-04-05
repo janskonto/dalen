@@ -1,21 +1,537 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Same head content as evardalen_viewer.html -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evardalen Weather & Camera</title>
+    <style>
+        :root {
+            --primary-color: #1a5276;
+            --secondary-color: #2980b9;
+            --accent-color: #3498db;
+            --background-color: #f5f5f5;
+            --card-background: #ffffff;
+            --text-color: #333333;
+            --border-radius: 8px;
+            --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: var(--primary-color);
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.2rem;
+            color: var(--secondary-color);
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        @media (min-width: 768px) {
+            .main-content {
+                flex-direction: row;
+            }
+        }
+
+        .camera-section {
+            flex: 2;
+            background-color: var(--card-background);
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .camera-section h2 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 10px;
+        }
+
+        .camera-image-container {
+            position: relative;
+            width: 100%;
+            height: 0;
+            padding-bottom: 56.25%; /* 16:9 aspect ratio */
+            overflow: hidden;
+            border-radius: var(--border-radius);
+            background-color: #e0e0e0;
+        }
+
+        .camera-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .image-timestamp {
+            margin-top: 15px;
+            text-align: right;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .weather-section {
+            flex: 1;
+            background-color: var(--card-background);
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            padding: 20px;
+        }
+
+        .weather-section h2 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 10px;
+        }
+
+        .weather-data {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .weather-card {
+            background-color: rgba(52, 152, 219, 0.1);
+            border-radius: var(--border-radius);
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .weather-icon {
+            font-size: 2.5rem;
+            color: var(--accent-color);
+        }
+
+        .weather-info {
+            flex-grow: 1;
+        }
+
+        .weather-info h3 {
+            font-size: 1.2rem;
+            margin-bottom: 5px;
+            color: var(--primary-color);
+        }
+
+        .weather-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--secondary-color);
+        }
+
+        .weather-unit {
+            font-size: 1rem;
+            color: #666;
+        }
+
+        .last-updated {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .refresh-button {
+            display: block;
+            margin: 30px auto 0;
+            padding: 12px 24px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .refresh-button:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .history-section {
+            margin-top: 30px;
+            background-color: var(--card-background);
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            padding: 20px;
+        }
+
+        .history-section h2 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 10px;
+        }
+
+        .history-entries {
+            display: flex;
+            overflow-x: auto;
+            gap: 15px;
+            padding: 10px 0;
+        }
+
+        .history-entry {
+            min-width: 200px;
+            background-color: rgba(52, 152, 219, 0.1);
+            border-radius: var(--border-radius);
+            padding: 15px;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .history-entry:hover {
+            transform: translateY(-5px);
+        }
+
+        .history-entry.active {
+            border: 2px solid var(--accent-color);
+        }
+
+        .history-entry h3 {
+            font-size: 1rem;
+            margin-bottom: 10px;
+            color: var(--primary-color);
+        }
+
+        .history-data {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-size: 1.2rem;
+            color: var(--secondary-color);
+        }
+
+        .error-message {
+            background-color: #ffdddd;
+            color: #d8000c;
+            padding: 15px;
+            border-radius: var(--border-radius);
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        /* Icons */
+        .icon-wind::before {
+            content: "💨";
+        }
+
+        .icon-temp::before {
+            content: "🌡️";
+        }
+
+        .icon-direction::before {
+            content: "🧭";
+        }
+
+        footer {
+            margin-top: 40px;
+            text-align: center;
+            color: #666;
+            font-size: 0.9rem;
+        }
+    </style>
 </head>
 <body>
-    <!-- Same body content as evardalen_viewer.html but with updated paths -->
+    <div class="container">
+        <header>
+            <h1>Evardalen Weather & Camera</h1>
+            <p>Live weather conditions and camera feed from Evardalen</p>
+        </header>
+
+        <div class="main-content">
+            <section class="camera-section">
+                <h2>Live Camera</h2>
+                <div class="camera-image-container">
+                    <img id="camera-image" class="camera-image" src="" alt="Evardalen Camera View">
+                </div>
+                <div class="image-timestamp" id="image-timestamp"></div>
+            </section>
+
+            <section class="weather-section">
+                <h2>Current Weather</h2>
+                <div class="weather-data">
+                    <div class="weather-card">
+                        <div class="weather-icon icon-temp"></div>
+                        <div class="weather-info">
+                            <h3>Temperature</h3>
+                            <div>
+                                <span id="temperature-value" class="weather-value">--</span>
+                                <span class="weather-unit">°C</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="weather-card">
+                        <div class="weather-icon icon-wind"></div>
+                        <div class="weather-info">
+                            <h3>Wind Speed</h3>
+                            <div>
+                                <span id="wind-speed-value" class="weather-value">--</span>
+                                <span class="weather-unit">m/s</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="weather-card">
+                        <div class="weather-icon icon-direction"></div>
+                        <div class="weather-info">
+                            <h3>Wind Direction</h3>
+                            <div>
+                                <span id="wind-direction-value" class="weather-value">--</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="last-updated" id="last-updated"></div>
+            </section>
+        </div>
+
+        <button id="refresh-button" class="refresh-button">Refresh Data</button>
+
+        <section class="history-section">
+            <h2>Historical Data</h2>
+            <div class="history-entries" id="history-entries">
+                <div class="loading">Loading historical data...</div>
+            </div>
+        </section>
+
+        <footer>
+            <p>Data sourced from Evardalen.com | Updated every 8 hours</p>
+        </footer>
+    </div>
+
     <script>
-        // Update CONFIG to use relative paths
+        // Configuration
         const CONFIG = {
             dataPath: './',
             currentDataFile: 'current_data.json',
             historyDataFile: 'history.json',
             imagesPath: './images/',
-            // Rest of the config
+            refreshInterval: null, // Will be set if auto-refresh is enabled
+            dateTimeFormat: {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            }
         };
-        
-        // Rest of your JavaScript
+
+        // DOM Elements
+        const elements = {
+            cameraImage: document.getElementById('camera-image'),
+            imageTimestamp: document.getElementById('image-timestamp'),
+            temperatureValue: document.getElementById('temperature-value'),
+            windSpeedValue: document.getElementById('wind-speed-value'),
+            windDirectionValue: document.getElementById('wind-direction-value'),
+            lastUpdated: document.getElementById('last-updated'),
+            refreshButton: document.getElementById('refresh-button'),
+            historyEntries: document.getElementById('history-entries')
+        };
+
+        // State
+        let currentData = null;
+        let historyData = [];
+        let selectedHistoryIndex = -1; // -1 means current data is selected
+
+        // Helper Functions
+        function formatDateTime(dateTimeStr) {
+            const date = new Date(dateTimeStr);
+            return date.toLocaleString(undefined, CONFIG.dateTimeFormat);
+        }
+
+        function showError(message) {
+            const errorElement = document.createElement('div');
+            errorElement.className = 'error-message';
+            errorElement.textContent = message;
+            
+            // Remove any existing error messages
+            document.querySelectorAll('.error-message').forEach(el => el.remove());
+            
+            // Insert after the refresh button
+            elements.refreshButton.parentNode.insertBefore(errorElement, elements.refreshButton.nextSibling);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                errorElement.remove();
+            }, 5000);
+        }
+
+        // Data Loading Functions
+        async function loadCurrentData() {
+            try {
+                const response = await fetch(`${CONFIG.dataPath}${CONFIG.currentDataFile}?_=${Date.now()}`);
+                if (!response.ok) {
+                    throw new Error(`Failed to load current data: ${response.status} ${response.statusText}`);
+                }
+                currentData = await response.json();
+                return currentData;
+            } catch (error) {
+                console.error('Error loading current data:', error);
+                showError('Failed to load current weather data. Please try again later.');
+                return null;
+            }
+        }
+
+        async function loadHistoryData() {
+            try {
+                const response = await fetch(`${CONFIG.dataPath}${CONFIG.historyDataFile}?_=${Date.now()}`);
+                if (!response.ok) {
+                    throw new Error(`Failed to load history data: ${response.status} ${response.statusText}`);
+                }
+                historyData = await response.json();
+                return historyData;
+            } catch (error) {
+                console.error('Error loading history data:', error);
+                showError('Failed to load historical weather data. Please try again later.');
+                return [];
+            }
+        }
+
+        // UI Update Functions
+        function updateCurrentDataDisplay() {
+            if (!currentData) return;
+            
+            // Update weather values
+            elements.temperatureValue.textContent = currentData.temperature;
+            elements.windSpeedValue.textContent = currentData.wind_speed;
+            elements.windDirectionValue.textContent = currentData.wind_direction || 'N/A';
+            
+            // Update image
+            if (currentData.image_path) {
+                elements.cameraImage.src = `${CONFIG.imagesPath}${currentData.image_path}`;
+                elements.cameraImage.alt = `Evardalen Camera View - ${formatDateTime(currentData.timestamp)}`;
+            }
+            
+            // Update timestamps
+            elements.imageTimestamp.textContent = `Image captured: ${formatDateTime(currentData.timestamp)}`;
+            elements.lastUpdated.textContent = `Last updated: ${formatDateTime(currentData.timestamp)}`;
+        }
+
+        function updateHistoryDisplay() {
+            // Clear existing entries
+            elements.historyEntries.innerHTML = '';
+            
+            if (!historyData || historyData.length === 0) {
+                elements.historyEntries.innerHTML = '<div class="loading">No historical data available</div>';
+                return;
+            }
+            
+            // Add entries in reverse chronological order (newest first)
+            historyData.slice().reverse().forEach((entry, index) => {
+                const entryElement = document.createElement('div');
+                entryElement.className = 'history-entry';
+                if (selectedHistoryIndex === historyData.length - 1 - index) {
+                    entryElement.classList.add('active');
+                }
+                
+                entryElement.innerHTML = `
+                    <h3>${formatDateTime(entry.timestamp)}</h3>
+                    <div class="history-data">
+                        <div>Temp: ${entry.temperature}°C</div>
+                        <div>Wind: ${entry.wind_speed} m/s ${entry.wind_direction || ''}</div>
+                    </div>
+                `;
+                
+                // Add click event to show this historical data
+                entryElement.addEventListener('click', () => {
+                    selectedHistoryIndex = historyData.length - 1 - index;
+                    displayHistoricalEntry(entry);
+                    
+                    // Update active state
+                    document.querySelectorAll('.history-entry').forEach(el => el.classList.remove('active'));
+                    entryElement.classList.add('active');
+                });
+                
+                elements.historyEntries.appendChild(entryElement);
+            });
+        }
+
+        function displayHistoricalEntry(entry) {
+            // Update weather values
+            elements.temperatureValue.textContent = entry.temperature;
+            elements.windSpeedValue.textContent = entry.wind_speed;
+            elements.windDirectionValue.textContent = entry.wind_direction || 'N/A';
+            
+            // Update image if available
+            if (entry.image_path) {
+                elements.cameraImage.src = `${CONFIG.imagesPath}${entry.image_path}`;
+                elements.cameraImage.alt = `Evardalen Camera View - ${formatDateTime(entry.timestamp)}`;
+            }
+            
+            // Update timestamps
+            elements.imageTimestamp.textContent = `Image captured: ${formatDateTime(entry.timestamp)}`;
+            elements.lastUpdated.textContent = `Historical data from: ${formatDateTime(entry.timestamp)}`;
+        }
+
+        // Main Functions
+        async function refreshData() {
+            // Show loading state
+            elements.temperatureValue.textContent = '--';
+            elements.windSpeedValue.textContent = '--';
+            elements.windDirectionValue.textContent = '--';
+            elements.lastUpdated.textContent = 'Loading...';
+            
+            // Reset to current data view
+            selectedHistoryIndex = -1;
+            
+            // Load data
+            await Promise.all([loadCurrentData(), loadHistoryData()]);
+            
+            // Update UI
+            updateCurrentDataDisplay();
+            updateHistoryDisplay();
+        }
+
+        // Event Listeners
+        elements.refreshButton.addEventListener('click', refreshData);
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshData();
+        });
     </script>
 </body>
 </html>
