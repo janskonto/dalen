@@ -23,7 +23,7 @@ jobs:
         pip install -r requirements.txt
         
     - name: Run scraper
-      run: python scraper/evardalen_scraper.py
+      run: python evardalen_scraper.py
 
       
     - name: Commit and push if changed
